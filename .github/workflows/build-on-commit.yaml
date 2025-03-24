@@ -1,0 +1,21 @@
+name: Build on Commit
+
+on:
+  - push
+
+jobs:
+  tag:
+    name: Construct tag name
+    runs-on: ubuntu-latest
+    steps:
+      - id: tag
+        run: echo "name=ingress-gateway-$(date +'%Y%m%dT%H%M%S')" >> $GITHUB_OUTPUT
+    outputs:
+      name: ${{ steps.tag.outputs.name }}
+
+  call-docker-publish:
+    uses: netcracker/qubership-workflow-hub/.github/workflows/docker-publish.yml@main
+    needs: [ tag ]
+    with:
+      artifact-id: ${{ steps.tag.outputs.name }}
+      download-artifact: true
