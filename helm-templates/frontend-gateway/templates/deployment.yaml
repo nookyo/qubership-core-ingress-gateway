@@ -1,0 +1,585 @@
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+    name: '{{ .Values.INTERNAL_SERVICE }}'
+    labels:
+        name: '{{ .Values.INTERNAL_SERVICE }}'
+        app.kubernetes.io/name: '{{ .Values.INTERNAL_SERVICE }}'
+        app.kubernetes.io/instance: '{{ cat .Values.INTERNAL_SERVICE "-" .Values.NAMESPACE | nospace | trunc 63 | trimSuffix "-" }}'
+        app.kubernetes.io/version: '{{ .Values.ARTIFACT_DESCRIPTOR_VERSION }}'
+        app.kubernetes.io/component: 'mesh-gateway'
+        app.kubernetes.io/part-of: 'Cloud-Core'
+        app.kubernetes.io/managed-by: 'saasDeployer'
+        app.kubernetes.io/technology: 'cpp'
+        deployment.qubership.org/sessionId: '{{ .Values.DEPLOYMENT_SESSION_ID }}'
+    annotations:
+        qubership.cloud/start.stage: '1'
+spec:
+    replicas: {{ .Values.REPLICAS | default 1 }}
+    strategy:
+    {{- if eq (default "" .Values.DEPLOYMENT_STRATEGY_TYPE) "recreate" }}
+      type: Recreate
+    {{- else if eq (default "" .Values.DEPLOYMENT_STRATEGY_TYPE) "best_effort_controlled_rollout" }}
+      type: RollingUpdate
+      rollingUpdate:
+        maxSurge: 0
+        maxUnavailable: 80%
+    {{- else if eq (default "" .Values.DEPLOYMENT_STRATEGY_TYPE) "ramped_slow_rollout" }}
+      type: RollingUpdate
+      rollingUpdate:
+        maxSurge: 1
+        maxUnavailable: 0
+    {{- else if eq (default "" .Values.DEPLOYMENT_STRATEGY_TYPE) "custom_rollout" }}
+      type: RollingUpdate
+      rollingUpdate:
+        maxSurge: {{ .Values.DEPLOYMENT_STRATEGY_MAXSURGE | default "25%" }}
+        maxUnavailable: {{ .Values.DEPLOYMENT_STRATEGY_MAXUNAVAILABLE | default "25%" }}
+    {{- else }}
+      type: RollingUpdate
+      rollingUpdate:
+        maxSurge: 25%
+        maxUnavailable: 25%
+    {{- end }}
+    template:
+        metadata:
+            labels:
+                name: '{{ .Values.INTERNAL_SERVICE }}'
+                app.kubernetes.io/name: '{{ .Values.INTERNAL_SERVICE }}'
+                app.kubernetes.io/instance: '{{ cat .Values.INTERNAL_SERVICE "-" .Values.NAMESPACE | nospace | trunc 63 | trimSuffix "-" }}'
+                app.kubernetes.io/version: '{{ .Values.ARTIFACT_DESCRIPTOR_VERSION }}'
+                app.kubernetes.io/component: 'mesh-gateway'
+                app.kubernetes.io/part-of: 'Cloud-Core'
+                app.kubernetes.io/managed-by: 'saasDeployer'
+                app.kubernetes.io/technology: 'cpp'
+        spec:
+            volumes:
+            -   name: '{{ .Values.SSL_SECRET }}'
+                secret:
+                    secretName: '{{ .Values.SSL_SECRET }}'
+{{ if .Values.INTERNAL_TLS_ENABLED }}
+            -   name: tls
+                secret:
+                  secretName: '{{ .Values.INTERNAL_SERVICE }}-tls'
+{{ end }}
+{{ if and .Values.READONLY_CONTAINER_FILE_SYSTEM_ENABLED (eq .Values.PAAS_PLATFORM "KUBERNETES") }}
+            -   name: config
+                emptyDir: {}
+{{ end }}
+            containers:
+            -   name: '{{ .Values.INTERNAL_SERVICE }}'
+                image: '{{ .Values.IMAGE_REPOSITORY }}:{{ .Values.TAG }}'
+                volumeMounts:
+                -   name: '{{ .Values.SSL_SECRET }}'
+                    mountPath: /tmp/cert/{{ .Values.SSL_SECRET }}
+{{ if .Values.INTERNAL_TLS_ENABLED }}
+                -   name: tls
+                    mountPath: '/etc/tls'
+                    readOnly: true
+{{ end }}
+{{ if and .Values.READONLY_CONTAINER_FILE_SYSTEM_ENABLED (eq .Values.PAAS_PLATFORM "KUBERNETES") }}
+                -   name: config
+                    mountPath: /envoy/config
+{{ end }}
+                args:
+                - /envoy/run.sh
+                ports:
+                -   name: web
+                    containerPort: 8080
+                    protocol: TCP
+                -   name: admin
+                    containerPort: 9901
+                    protocol: TCP
+{{ if .Values.INTERNAL_TLS_ENABLED }}
+                -   name: tls
+                    containerPort: 8443
+                    protocol: TCP
+{{ end }}
+                env:
+                -   name: SERVICE_NAME_VARIABLE
+                    value: '{{ .Values.INTERNAL_SERVICE_NAME }}'
+                -   name: LOG_LEVEL
+                    value: '{{ lower .Values.LOG_LEVEL }}'
+                -   name: CERTIFICATE_BUNDLE_{{ .Values.SSL_SECRET }}_MD5SUM
+                    value: '{{ .Values.CERTIFICATE_BUNDLE_MD5SUM }}'
+                -   name: CLOUD_NAMESPACE
+                    valueFrom:
+                        fieldRef:
+                            fieldPath: metadata.namespace
+                -   name: POD_HOSTNAME
+                    valueFrom:
+                        fieldRef:
+                            fieldPath: metadata.name
+                -   name: IP_STACK
+                    value: '{{ .Values.IP_STACK }}'
+                -   name: IP_BIND
+                    value: '{{ if eq .Values.IP_STACK "v6" }} "::" {{ else }} "0.0.0.0" {{ end }}'
+                -   name: TRACING_ENABLED
+                    value: '{{ .Values.TRACING_ENABLED }}'
+                -   name: TRACING_HOST
+                    value: '{{ .Values.TRACING_HOST }}'
+                -   name: ENVOY_UID
+                    value: '{{ .Values.ENVOY_UID }}'
+                -   name: XDS_CLUSTER_HOST
+                    value: '{{ .Values.XDS_CLUSTER_HOST }}'
+                -   name: XDS_CLUSTER_PORT
+                    value: '{{ .Values.XDS_CLUSTER_PORT }}'
+                -   name: RUN_COREDNS
+                    value: '{{ .Values.RUN_COREDNS }}'
+                -   name: INTERNAL_TLS_ENABLED
+                    value: '{{ .Values.INTERNAL_TLS_ENABLED }}'
+{{ if .Values.INTERNAL_TLS_ENABLED }}
+                -   name: CERTIFICATE_FILE_PASSWORD
+                    valueFrom:
+                      secretKeyRef:
+                        name: 'tls-password-secret'
+                        key: 'tls-password'
+{{ end }}
+                -   name: FACADE_GATEWAY
+                    value: '{{ .Values.FACADE_GATEWAY }}'
+                resources:
+                    requests:
+                        cpu: '{{ .Values.CPU_REQUEST }}'
+                        memory: '{{ .Values.INTERNAL_GW_MEMORY_LIMIT }}'
+                    limits:
+                        memory: '{{ .Values.INTERNAL_GW_MEMORY_LIMIT }}'
+                        cpu: {{ .Values.INTERNAL_GW_CPU_LIMIT }}
+                livenessProbe:
+                    httpGet:
+                        path: '{{ .Values.HEALTHCHECK_PATH }}'
+                        port: '{{ .Values.HEALTHCHECK_PORT }}'
+                        scheme: 'HTTP'
+                    initialDelaySeconds: 300
+                    timeoutSeconds: 30
+                readinessProbe:
+                    httpGet:
+                        path: '{{ .Values.READINESS_PATH }}'
+                        port: '{{ .Values.HEALTHCHECK_PORT }}'
+                        scheme: 'HTTP'
+                    initialDelaySeconds: 1
+                    timeoutSeconds: 30
+                    periodSeconds: 2
+                    failureThreshold: 15
+                securityContext:
+{{ if eq .Values.PAAS_PLATFORM "KUBERNETES" }}
+                    runAsGroup: 10001
+{{ end }}
+                    readOnlyRootFilesystem: {{ and .Values.READONLY_CONTAINER_FILE_SYSTEM_ENABLED (eq .Values.PAAS_PLATFORM "KUBERNETES") }}
+                    runAsNonRoot: true
+                    seccompProfile:
+                        type: RuntimeDefault
+                    allowPrivilegeEscalation: false
+                    capabilities:
+                        drop:
+                          - ALL
+            topologySpreadConstraints:
+{{- if .Values.CLOUD_TOPOLOGIES }}
+{{- range $v := .Values.CLOUD_TOPOLOGIES }}
+              - topologyKey: {{ $v.topologyKey }}
+                maxSkew: {{ $v.maxSkew | default 1 }}
+                whenUnsatisfiable: {{ $v.whenUnsatisfiable | default "ScheduleAnyway" }}
+                labelSelector:
+                  matchLabels:
+                    name: "{{ $.Values.INTERNAL_SERVICE }}"
+{{- end }}
+{{- else }}
+              - maxSkew: 1
+                topologyKey: "{{ .Values.CLOUD_TOPOLOGY_KEY }}"
+                whenUnsatisfiable: ScheduleAnyway
+                labelSelector:
+                  matchLabels:
+                    name: "{{ .Values.INTERNAL_SERVICE }}"
+{{- end }}
+            terminationGracePeriodSeconds: {{ .Values.GW_TERMINATION_GRACE_PERIOD_S }}
+    selector:
+        matchLabels:
+            name: '{{ .Values.INTERNAL_SERVICE }}'
+
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+    name: '{{ .Values.PRIVATE_SERVICE }}'
+    labels:
+        name: '{{ .Values.PRIVATE_SERVICE }}'
+        app.kubernetes.io/name: '{{ .Values.PRIVATE_SERVICE }}'
+        app.kubernetes.io/instance: '{{ cat .Values.PRIVATE_SERVICE "-" .Values.NAMESPACE | nospace | trunc 63 }}'
+        app.kubernetes.io/version: '{{ .Values.ARTIFACT_DESCRIPTOR_VERSION }}'
+        app.kubernetes.io/component: 'mesh-gateway'
+        app.kubernetes.io/part-of: 'Cloud-Core'
+        app.kubernetes.io/managed-by: 'saasDeployer'
+        app.kubernetes.io/technology: 'cpp'
+        deployment.qubership.org/sessionId: '{{ .Values.DEPLOYMENT_SESSION_ID }}'
+    annotations:
+        qubership.cloud/start.stage: '1'
+spec:
+    replicas: {{ .Values.REPLICAS | default 1 }}
+    strategy:
+    {{- if eq (default "" .Values.DEPLOYMENT_STRATEGY_TYPE) "recreate" }}
+      type: Recreate
+    {{- else if eq (default "" .Values.DEPLOYMENT_STRATEGY_TYPE) "best_effort_controlled_rollout" }}
+      type: RollingUpdate
+      rollingUpdate:
+        maxSurge: 0
+        maxUnavailable: 80%
+    {{- else if eq (default "" .Values.DEPLOYMENT_STRATEGY_TYPE) "ramped_slow_rollout" }}
+      type: RollingUpdate
+      rollingUpdate:
+        maxSurge: 1
+        maxUnavailable: 0
+    {{- else if eq (default "" .Values.DEPLOYMENT_STRATEGY_TYPE) "custom_rollout" }}
+      type: RollingUpdate
+      rollingUpdate:
+        maxSurge: {{ .Values.DEPLOYMENT_STRATEGY_MAXSURGE | default "25%" }}
+        maxUnavailable: {{ .Values.DEPLOYMENT_STRATEGY_MAXUNAVAILABLE | default "25%" }}
+    {{- else }}
+      type: RollingUpdate
+      rollingUpdate:
+        maxSurge: 25%
+        maxUnavailable: 25%
+    {{- end }}
+    template:
+        metadata:
+            labels:
+                name: '{{ .Values.PRIVATE_SERVICE }}'
+                app.kubernetes.io/name: '{{ .Values.PRIVATE_SERVICE }}'
+                app.kubernetes.io/instance: '{{ cat .Values.PRIVATE_SERVICE "-" .Values.NAMESPACE | nospace | trunc 63 }}'
+                app.kubernetes.io/version: '{{ .Values.ARTIFACT_DESCRIPTOR_VERSION }}'
+                app.kubernetes.io/component: 'mesh-gateway'
+                app.kubernetes.io/part-of: 'Cloud-Core'
+                app.kubernetes.io/managed-by: 'saasDeployer'
+                app.kubernetes.io/technology: 'cpp'
+        spec:
+            volumes:
+            -   name: '{{ .Values.SSL_SECRET }}'
+                secret:
+                    secretName: '{{ .Values.SSL_SECRET }}'
+{{ if .Values.INTERNAL_TLS_ENABLED }}
+            -   name: tls
+                secret:
+                  secretName: '{{ .Values.PRIVATE_SERVICE }}-tls'
+{{ end }}
+{{ if and .Values.READONLY_CONTAINER_FILE_SYSTEM_ENABLED (eq .Values.PAAS_PLATFORM "KUBERNETES") }}
+            -   name: config
+                emptyDir: {}
+{{ end }}
+            containers:
+            -   name: '{{ .Values.PRIVATE_SERVICE }}'
+                image: '{{ .Values.IMAGE_REPOSITORY }}:{{ .Values.TAG }}'
+                volumeMounts:
+                -   name: '{{ .Values.SSL_SECRET }}'
+                    mountPath: /tmp/cert/{{ .Values.SSL_SECRET }}
+{{ if .Values.INTERNAL_TLS_ENABLED }}
+                -   name: tls
+                    mountPath: '/etc/tls'
+                    readOnly: true
+{{ end }}
+{{ if and .Values.READONLY_CONTAINER_FILE_SYSTEM_ENABLED (eq .Values.PAAS_PLATFORM "KUBERNETES") }}
+                -   name: config
+                    mountPath: /envoy/config
+{{ end }}
+                args:
+                - /envoy/run.sh
+                ports:
+                -   name: web
+                    containerPort: 8080
+                    protocol: TCP
+                -   name: admin
+                    containerPort: 9901
+                    protocol: TCP
+{{ if .Values.INTERNAL_TLS_ENABLED }}
+                -   name: tls
+                    containerPort: 8443
+                    protocol: TCP
+{{ end }}
+                env:
+                -   name: SERVICE_NAME_VARIABLE
+                    value: '{{ .Values.PRIVATE_SERVICE_NAME }}'
+                -   name: LOG_LEVEL
+                    value: '{{ lower .Values.LOG_LEVEL }}'
+                -   name: CERTIFICATE_BUNDLE_{{ .Values.SSL_SECRET }}_MD5SUM
+                    value: '{{ .Values.CERTIFICATE_BUNDLE_MD5SUM }}'
+                -   name: CLOUD_NAMESPACE
+                    valueFrom:
+                        fieldRef:
+                            fieldPath: metadata.namespace
+                -   name: POD_HOSTNAME
+                    valueFrom:
+                        fieldRef:
+                            fieldPath: metadata.name
+                -   name: IP_STACK
+                    value: '{{ .Values.IP_STACK }}'
+                -   name: IP_BIND
+                    value: '{{ if eq .Values.IP_STACK "v6" }} "::" {{ else }} "0.0.0.0" {{ end }}'
+                -   name: TRACING_ENABLED
+                    value: '{{ .Values.TRACING_ENABLED }}'
+                -   name: TRACING_HOST
+                    value: '{{ .Values.TRACING_HOST }}'
+                -   name: ENVOY_UID
+                    value: '{{ .Values.ENVOY_UID }}'
+                -   name: XDS_CLUSTER_HOST
+                    value: '{{ .Values.XDS_CLUSTER_HOST }}'
+                -   name: XDS_CLUSTER_PORT
+                    value: '{{ .Values.XDS_CLUSTER_PORT }}'
+                -   name: RUN_COREDNS
+                    value: '{{ .Values.RUN_COREDNS }}'
+                -   name: INTERNAL_TLS_ENABLED
+                    value: '{{ .Values.INTERNAL_TLS_ENABLED }}'
+{{ if .Values.INTERNAL_TLS_ENABLED }}
+                -   name: CERTIFICATE_FILE_PASSWORD
+                    valueFrom:
+                      secretKeyRef:
+                        name: 'tls-password-secret'
+                        key: 'tls-password'
+{{ end }}
+                resources:
+                    requests:
+                        cpu: '{{ .Values.CPU_REQUEST }}'
+                        memory: '{{ .Values.PRIVATE_GW_MEMORY_LIMIT }}'
+                    limits:
+                        memory: '{{ .Values.PRIVATE_GW_MEMORY_LIMIT }}'
+                        cpu: {{ .Values.PRIVATE_GW_CPU_LIMIT }}
+                livenessProbe:
+                    httpGet:
+                      path: '{{ .Values.HEALTHCHECK_PATH }}'
+                      port: '{{ .Values.HEALTHCHECK_PORT }}'
+                      scheme: 'HTTP'
+                    initialDelaySeconds: 300
+                    timeoutSeconds: 30
+                readinessProbe:
+                    httpGet:
+                      path: '{{ .Values.READINESS_PATH }}'
+                      port: '{{ .Values.HEALTHCHECK_PORT }}'
+                      scheme: 'HTTP'
+                    initialDelaySeconds: 1
+                    timeoutSeconds: 30
+                    periodSeconds: 2
+                    failureThreshold: 15
+                securityContext:
+{{ if eq .Values.PAAS_PLATFORM "KUBERNETES" }}
+                    runAsGroup: 10001
+{{ end }}
+                    readOnlyRootFilesystem: {{ and .Values.READONLY_CONTAINER_FILE_SYSTEM_ENABLED (eq .Values.PAAS_PLATFORM "KUBERNETES") }}
+                    runAsNonRoot: true
+                    seccompProfile:
+                        type: RuntimeDefault
+                    allowPrivilegeEscalation: false
+                    capabilities:
+                        drop:
+                          - ALL
+            topologySpreadConstraints:
+{{- if .Values.CLOUD_TOPOLOGIES }}
+{{- range $v := .Values.CLOUD_TOPOLOGIES }}
+              - topologyKey: {{ $v.topologyKey }}
+                maxSkew: {{ $v.maxSkew | default 1 }}
+                whenUnsatisfiable: {{ $v.whenUnsatisfiable | default "ScheduleAnyway" }}
+                labelSelector:
+                  matchLabels:
+                    name: "{{ $.Values.PRIVATE_SERVICE }}"
+{{- end }}
+{{- else }}
+              - maxSkew: 1
+                topologyKey: "{{ .Values.CLOUD_TOPOLOGY_KEY }}"
+                whenUnsatisfiable: ScheduleAnyway
+                labelSelector:
+                  matchLabels:
+                    name: "{{ .Values.PRIVATE_SERVICE }}"
+{{- end }}
+            terminationGracePeriodSeconds: {{ .Values.GW_TERMINATION_GRACE_PERIOD_S }}
+    selector:
+        matchLabels:
+            name: '{{ .Values.PRIVATE_SERVICE }}'
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+    name: '{{ .Values.PUBLIC_SERVICE }}'
+    labels:
+        name: '{{ .Values.PUBLIC_SERVICE }}'
+        app.kubernetes.io/name: '{{ .Values.PUBLIC_SERVICE }}'
+        app.kubernetes.io/instance: '{{ cat .Values.PUBLIC_SERVICE "-" .Values.NAMESPACE | nospace | trunc 63 }}'
+        app.kubernetes.io/version: '{{ .Values.ARTIFACT_DESCRIPTOR_VERSION }}'
+        app.kubernetes.io/component: 'mesh-gateway'
+        app.kubernetes.io/part-of: 'Cloud-Core'
+        app.kubernetes.io/managed-by: 'saasDeployer'
+        app.kubernetes.io/technology: 'cpp'
+        deployment.qubership.org/sessionId: '{{ .Values.DEPLOYMENT_SESSION_ID }}'
+    annotations:
+        qubership.cloud/start.stage: '1'
+spec:
+    replicas: {{ .Values.REPLICAS | default 1 }}
+    strategy:
+    {{- if eq (default "" .Values.DEPLOYMENT_STRATEGY_TYPE) "recreate" }}
+      type: Recreate
+    {{- else if eq (default "" .Values.DEPLOYMENT_STRATEGY_TYPE) "best_effort_controlled_rollout" }}
+      type: RollingUpdate
+      rollingUpdate:
+        maxSurge: 0
+        maxUnavailable: 80%
+    {{- else if eq (default "" .Values.DEPLOYMENT_STRATEGY_TYPE) "ramped_slow_rollout" }}
+      type: RollingUpdate
+      rollingUpdate:
+        maxSurge: 1
+        maxUnavailable: 0
+    {{- else if eq (default "" .Values.DEPLOYMENT_STRATEGY_TYPE) "custom_rollout" }}
+      type: RollingUpdate
+      rollingUpdate:
+        maxSurge: {{ .Values.DEPLOYMENT_STRATEGY_MAXSURGE | default "25%" }}
+        maxUnavailable: {{ .Values.DEPLOYMENT_STRATEGY_MAXUNAVAILABLE | default "25%" }}
+    {{- else }}
+      type: RollingUpdate
+      rollingUpdate:
+        maxSurge: 25%
+        maxUnavailable: 25%
+    {{- end }}
+    template:
+        metadata:
+            labels:
+                name: '{{ .Values.PUBLIC_SERVICE }}'
+                app.kubernetes.io/name: '{{ .Values.PUBLIC_SERVICE }}'
+                app.kubernetes.io/instance: '{{ cat .Values.PUBLIC_SERVICE "-" .Values.NAMESPACE | nospace | trunc 63 }}'
+                app.kubernetes.io/version: '{{ .Values.ARTIFACT_DESCRIPTOR_VERSION }}'
+                app.kubernetes.io/component: 'mesh-gateway'
+                app.kubernetes.io/part-of: 'Cloud-Core'
+                app.kubernetes.io/managed-by: 'saasDeployer'
+                app.kubernetes.io/technology: 'cpp'
+        spec:
+            volumes:
+            -   name: '{{ .Values.SSL_SECRET }}'
+                secret:
+                    secretName: '{{ .Values.SSL_SECRET }}'
+{{ if .Values.INTERNAL_TLS_ENABLED }}
+            -   name: tls
+                secret:
+                  secretName: '{{ .Values.PUBLIC_SERVICE }}-tls'
+{{ end }}
+{{ if and .Values.READONLY_CONTAINER_FILE_SYSTEM_ENABLED (eq .Values.PAAS_PLATFORM "KUBERNETES") }}
+            -   name: config
+                emptyDir: {}
+{{ end }}
+            containers:
+            -   name: '{{ .Values.PUBLIC_SERVICE }}'
+                image: '{{ .Values.IMAGE_REPOSITORY }}:{{ .Values.TAG }}'
+                volumeMounts:
+                -   name: '{{ .Values.SSL_SECRET }}'
+                    mountPath: /tmp/cert/{{ .Values.SSL_SECRET }}
+{{ if .Values.INTERNAL_TLS_ENABLED }}
+                -   name: tls
+                    mountPath: '/etc/tls'
+                    readOnly: true
+{{ end }}
+{{ if and .Values.READONLY_CONTAINER_FILE_SYSTEM_ENABLED (eq .Values.PAAS_PLATFORM "KUBERNETES") }}
+                -   name: config
+                    mountPath: /envoy/config
+{{ end }}
+                args:
+                - /envoy/run.sh
+                ports:
+                -   name: web
+                    containerPort: 8080
+                    protocol: TCP
+                -   name: admin
+                    containerPort: 9901
+                    protocol: TCP
+{{ if .Values.INTERNAL_TLS_ENABLED }}
+                -   name: tls
+                    containerPort: 8443
+                    protocol: TCP
+{{ end }}
+                env:
+                -   name: SERVICE_NAME_VARIABLE
+                    value: '{{ .Values.PUBLIC_SERVICE_NAME }}'
+                -   name: LOG_LEVEL
+                    value: '{{ lower .Values.LOG_LEVEL }}'
+                -   name: CERTIFICATE_BUNDLE_{{ .Values.SSL_SECRET }}_MD5SUM
+                    value: '{{ .Values.CERTIFICATE_BUNDLE_MD5SUM }}'
+                -   name: CLOUD_NAMESPACE
+                    valueFrom:
+                        fieldRef:
+                            fieldPath: metadata.namespace
+                -   name: POD_HOSTNAME
+                    valueFrom:
+                        fieldRef:
+                            fieldPath: metadata.name
+                -   name: IP_STACK
+                    value: '{{ .Values.IP_STACK }}'
+                -   name: IP_BIND
+                    value: '{{ if eq .Values.IP_STACK "v6" }} "::" {{ else }} "0.0.0.0" {{ end }}'
+                -   name: TRACING_ENABLED
+                    value: '{{ .Values.TRACING_ENABLED }}'
+                -   name: TRACING_HOST
+                    value: '{{ .Values.TRACING_HOST }}'
+                -   name: ENVOY_UID
+                    value: '{{ .Values.ENVOY_UID }}'
+                -   name: XDS_CLUSTER_HOST
+                    value: '{{ .Values.XDS_CLUSTER_HOST }}'
+                -   name: XDS_CLUSTER_PORT
+                    value: '{{ .Values.XDS_CLUSTER_PORT }}'
+                -   name: RUN_COREDNS
+                    value: '{{ .Values.RUN_COREDNS }}'
+                -   name: INTERNAL_TLS_ENABLED
+                    value: '{{ .Values.INTERNAL_TLS_ENABLED }}'
+{{ if .Values.INTERNAL_TLS_ENABLED }}
+                -   name: CERTIFICATE_FILE_PASSWORD
+                    valueFrom:
+                      secretKeyRef:
+                        name: 'tls-password-secret'
+                        key: 'tls-password'
+{{ end }}
+                resources:
+                    requests:
+                        cpu: '{{ .Values.CPU_REQUEST }}'
+                        memory: '{{ .Values.PUBLIC_GW_MEMORY_LIMIT }}'
+                    limits:
+                        memory: '{{ .Values.PUBLIC_GW_MEMORY_LIMIT }}'
+                        cpu: {{ .Values.PUBLIC_GW_CPU_LIMIT }}
+                livenessProbe:
+                    httpGet:
+                      path: '{{ .Values.HEALTHCHECK_PATH }}'
+                      port: '{{ .Values.HEALTHCHECK_PORT }}'
+                      scheme: 'HTTP'
+                    initialDelaySeconds: 300
+                    timeoutSeconds: 30
+                readinessProbe:
+                    httpGet:
+                      path: '{{ .Values.READINESS_PATH }}'
+                      port: '{{ .Values.HEALTHCHECK_PORT }}'
+                      scheme: 'HTTP'
+                    initialDelaySeconds: 1
+                    timeoutSeconds: 30
+                    periodSeconds: 2
+                    failureThreshold: 15
+                securityContext:
+{{ if eq .Values.PAAS_PLATFORM "KUBERNETES" }}
+                    runAsGroup: 10001
+{{ end }}
+                    readOnlyRootFilesystem: {{ and .Values.READONLY_CONTAINER_FILE_SYSTEM_ENABLED (eq .Values.PAAS_PLATFORM "KUBERNETES") }}
+                    runAsNonRoot: true
+                    seccompProfile:
+                        type: RuntimeDefault
+                    allowPrivilegeEscalation: false
+                    capabilities:
+                        drop:
+                          - ALL
+            topologySpreadConstraints:
+{{- if .Values.CLOUD_TOPOLOGIES }}
+{{- range $v := .Values.CLOUD_TOPOLOGIES }}
+              - topologyKey: {{ $v.topologyKey }}
+                maxSkew: {{ $v.maxSkew | default 1 }}
+                whenUnsatisfiable: {{ $v.whenUnsatisfiable | default "ScheduleAnyway" }}
+                labelSelector:
+                  matchLabels:
+                    name: "{{ $.Values.PUBLIC_SERVICE }}"
+{{- end }}
+{{- else }}
+              - maxSkew: 1
+                topologyKey: "{{ .Values.CLOUD_TOPOLOGY_KEY }}"
+                whenUnsatisfiable: ScheduleAnyway
+                labelSelector:
+                  matchLabels:
+                    name: "{{ .Values.PUBLIC_SERVICE }}"
+{{- end }}
+            terminationGracePeriodSeconds: {{ .Values.GW_TERMINATION_GRACE_PERIOD_S }}
+    selector:
+        matchLabels:
+            name: '{{ .Values.PUBLIC_SERVICE }}'

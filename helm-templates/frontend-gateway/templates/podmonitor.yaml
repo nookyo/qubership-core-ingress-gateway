@@ -1,0 +1,80 @@
+{{ if .Values.MONITORING_ENABLED }}
+---
+kind: PodMonitor
+apiVersion: monitoring.coreos.com/v1
+metadata:
+  name: '{{ .Values.INTERNAL_SERVICE }}-pod-monitor'
+  labels:
+    k8s-app: '{{ .Values.INTERNAL_SERVICE }}-pod-monitor'
+    app.kubernetes.io/name: '{{ .Values.INTERNAL_SERVICE }}-pod-monitor'
+    app.kubernetes.io/component: monitoring
+    app.kubernetes.io/part-of: Cloud-Core
+    app.kubernetes.io/managed-by: saasDeployer
+    app.kubernetes.io/processed-by-operator: victoriametrics-operator
+    deployment.qubership.org/sessionId: '{{ .Values.DEPLOYMENT_SESSION_ID }}'
+spec:
+  podMetricsEndpoints:
+    - interval: 30s
+      port: admin
+      scheme: http
+      path: "/stats/prometheus"
+  jobLabel: k8s-app
+  namespaceSelector:
+    matchNames:
+      - '{{ .Values.NAMESPACE }}'
+  selector:
+    matchLabels:
+      name: '{{ .Values.INTERNAL_SERVICE }}'
+---
+kind: PodMonitor
+apiVersion: monitoring.coreos.com/v1
+metadata:
+  name: '{{ .Values.PRIVATE_SERVICE }}-pod-monitor'
+  labels:
+    k8s-app: '{{ .Values.PRIVATE_SERVICE }}-pod-monitor'
+    app.kubernetes.io/name: '{{ .Values.PRIVATE_SERVICE }}-pod-monitor'
+    app.kubernetes.io/component: monitoring
+    app.kubernetes.io/part-of: Cloud-Core
+    app.kubernetes.io/managed-by: saasDeployer
+    app.kubernetes.io/processed-by-operator: victoriametrics-operator
+    deployment.qubership.org/sessionId: '{{ .Values.DEPLOYMENT_SESSION_ID }}'
+spec:
+  podMetricsEndpoints:
+    - interval: 30s
+      port: admin
+      scheme: http
+      path: "/stats/prometheus"
+  jobLabel: k8s-app
+  namespaceSelector:
+    matchNames:
+      - '{{ .Values.NAMESPACE }}'
+  selector:
+    matchLabels:
+      name: '{{ .Values.PRIVATE_SERVICE }}'
+---
+kind: PodMonitor
+apiVersion: monitoring.coreos.com/v1
+metadata:
+  name: '{{ .Values.PUBLIC_SERVICE }}-pod-monitor'
+  labels:
+    k8s-app: '{{ .Values.PUBLIC_SERVICE }}-pod-monitor'
+    app.kubernetes.io/name: '{{ .Values.PUBLIC_SERVICE }}-pod-monitor'
+    app.kubernetes.io/component: monitoring
+    app.kubernetes.io/part-of: Cloud-Core
+    app.kubernetes.io/managed-by: saasDeployer
+    app.kubernetes.io/processed-by-operator: victoriametrics-operator
+    deployment.qubership.org/sessionId: '{{ .Values.DEPLOYMENT_SESSION_ID }}'
+spec:
+  podMetricsEndpoints:
+    - interval: 30s
+      port: admin
+      scheme: http
+      path: "/stats/prometheus"
+  jobLabel: k8s-app
+  namespaceSelector:
+    matchNames:
+      - '{{ .Values.NAMESPACE }}'
+  selector:
+    matchLabels:
+      name: '{{ .Values.PUBLIC_SERVICE }}'
+{{ end }}

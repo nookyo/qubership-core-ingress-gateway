@@ -1,0 +1,57 @@
+---
+{{ if not .Values.SKIP_EGRESS_GATEWAY_CREATION }}
+kind: FacadeService
+apiVersion: qubership.org/v1alpha
+metadata:
+    name: "{{ .Values.EGRESS_GATEWAY_SERVICE_NAME }}"
+    namespace: "{{ .Values.NAMESPACE }}"
+    labels:
+        app.kubernetes.io/part-of: 'Cloud-Core'
+        app.kubernetes.io/managed-by: 'saasDeployer'
+        app.kubernetes.io/processed-by-operator: facade-operator
+        app.kubernetes.io/version: '{{ .Values.ARTIFACT_DESCRIPTOR_VERSION }}'
+        deployment.qubership.org/sessionId: '{{ .Values.DEPLOYMENT_SESSION_ID }}'
+        deployer.cleanup/allow: "true"
+spec:
+    port: 8080
+    masterConfiguration: true
+    env:
+        facadeGatewayCpuLimit: '{{ .Values.EGRESS_GW_CPU_LIMIT }}'
+        facadeGatewayCpuRequest: '{{ .Values.CPU_REQUEST }}'
+        facadeGatewayMemoryLimit: '{{ .Values.EGRESS_GW_MEMORY_LIMIT }}'
+        facadeGatewayMemoryRequest: '{{ .Values.EGRESS_GW_MEMORY_LIMIT }}'
+  {{ if .Values.HPA_ENABLED }}
+    hpa:
+        minReplicas: {{ coalesce .Values.HPA_MIN_REPLICAS .Values.REPLICAS }}
+        maxReplicas: {{ .Values.HPA_MAX_REPLICAS }}
+        averageCpuUtilization: {{ int (divf (mulf (default 75 .Values.HPA_AVG_CPU_UTILIZATION_TARGET_PERCENT) (include "to_millicores" .Values.EGRESS_GW_CPU_LIMIT)) (include "to_millicores" .Values.CPU_REQUEST)) }}
+        scaleUpBehavior:
+            stabilizationWindowSeconds: {{ default 0 .Values.HPA_SCALING_UP_STABILIZATION_WINDOW_SECONDS }}
+            selectPolicy: {{ default "Max" .Values.HPA_SCALING_UP_SELECT_POLICY }}
+            policies:
+              {{- if and .Values.HPA_SCALING_UP_PERCENT_VALUE (ge (int .Values.HPA_SCALING_UP_PERCENT_PERIOD_SECONDS) 0) }}
+                - type: Percent
+                  value: {{ .Values.HPA_SCALING_UP_PERCENT_VALUE }}
+                  periodSeconds: {{ .Values.HPA_SCALING_UP_PERCENT_PERIOD_SECONDS }}
+              {{- end }}
+              {{- if and .Values.HPA_SCALING_UP_PODS_VALUE (ge (int .Values.HPA_SCALING_UP_PODS_PERIOD_SECONDS) 0) }}
+                - type: Pods
+                  value: {{ .Values.HPA_SCALING_UP_PODS_VALUE }}
+                  periodSeconds: {{ .Values.HPA_SCALING_UP_PODS_PERIOD_SECONDS }}
+              {{- end }}
+        scaleDownBehavior:
+            stabilizationWindowSeconds: {{ default 300 .Values.HPA_SCALING_DOWN_STABILIZATION_WINDOW_SECONDS }}
+            selectPolicy: {{ default "Max" .Values.HPA_SCALING_DOWN_SELECT_POLICY }}
+            policies:
+              {{- if and .Values.HPA_SCALING_DOWN_PERCENT_VALUE (ge (int .Values.HPA_SCALING_DOWN_PERCENT_PERIOD_SECONDS) 0) }}
+                - type: Percent
+                  value: {{ .Values.HPA_SCALING_DOWN_PERCENT_VALUE }}
+                  periodSeconds: {{ .Values.HPA_SCALING_DOWN_PERCENT_PERIOD_SECONDS }}
+              {{- end }}
+              {{- if and .Values.HPA_SCALING_DOWN_PODS_VALUE (ge (int .Values.HPA_SCALING_DOWN_PODS_PERIOD_SECONDS) 0)}}
+                - type: Pods
+                  value: {{ .Values.HPA_SCALING_DOWN_PODS_VALUE }}
+                  periodSeconds: {{ .Values.HPA_SCALING_DOWN_PODS_PERIOD_SECONDS }}
+              {{- end }}
+  {{ end }}
+{{ end }}

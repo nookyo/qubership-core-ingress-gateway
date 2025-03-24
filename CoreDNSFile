@@ -1,0 +1,11 @@
+.:1053 {
+
+forward . /etc/resolv.conf
+
+template ANY ANY local {
+    match ^dc-[0-9]*[.]local(.*)[.]$
+    answer "{{ .Name }} 604800 IN CNAME localhost"
+}
+
+#log
+}

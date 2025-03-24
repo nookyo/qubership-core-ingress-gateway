@@ -1,0 +1,47 @@
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+    name: '{{ .Values.INTERNAL_SERVICE }}.monitoring-config'
+    labels:
+      app.kubernetes.io/part-of: 'Cloud-Core'
+      app.kubernetes.io/managed-by: 'saasDeployer'
+      deployment.qubership.org/sessionId: '{{ .Values.DEPLOYMENT_SESSION_ID }}'
+data:
+    prometheus.url.metrics: http://%(ip)s:9901/stats/prometheus
+
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+    name: '{{ .Values.PUBLIC_SERVICE }}.monitoring-config'
+    labels:
+      app.kubernetes.io/part-of: 'Cloud-Core'
+      app.kubernetes.io/managed-by: 'saasDeployer'
+      deployment.qubership.org/sessionId: '{{ .Values.DEPLOYMENT_SESSION_ID }}'
+data:
+    prometheus.url.metrics: http://%(ip)s:9901/stats/prometheus
+
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+    name: '{{ .Values.PRIVATE_SERVICE }}.monitoring-config'
+    labels:
+      app.kubernetes.io/part-of: 'Cloud-Core'
+      app.kubernetes.io/managed-by: 'saasDeployer'
+      deployment.qubership.org/sessionId: '{{ .Values.DEPLOYMENT_SESSION_ID }}'
+data:
+    prometheus.url.metrics: http://%(ip)s:9901/stats/prometheus
+
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+    name: 'core-gateway-image'
+    labels:
+      app.kubernetes.io/part-of: 'Cloud-Core'
+      app.kubernetes.io/managed-by: 'saasDeployer'
+      deployment.qubership.org/sessionId: '{{ .Values.DEPLOYMENT_SESSION_ID }}'
+data:
+    image: '{{ .Values.IMAGE_REPOSITORY }}:{{ .Values.TAG }}'

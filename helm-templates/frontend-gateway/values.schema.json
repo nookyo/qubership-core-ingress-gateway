@@ -1,0 +1,796 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "http://example.com/example.json",
+  "type": "object",
+  "title": "The gateways schema",
+  "required": [
+    "DEPLOYMENT_SESSION_ID"
+  ],
+  "description": "The JSON schema got all gateways.",
+  "default": { },
+  "examples": [
+    {
+      "PAAS_PLATFORM": "KUBERNETES",
+      "CERTIFICATE_BUNDLE_MD5SUM": "d41d8cd98f00b204e9800998ecf8427e",
+      "CPU_REQUEST": "100m",
+      "IMAGE_REPOSITORY": "",
+      "HEALTHCHECK_PATH": "/ready",
+      "READINESS_PATH": "/ready",
+      "HEALTHCHECK_PORT": "web",
+      "INTERNAL_GW_CPU_LIMIT": "2",
+      "INTERNAL_GW_MEMORY_LIMIT": "200Mi",
+      "INTERNAL_SERVICE": "internal-gateway",
+      "INTERNAL_SERVICE_NAME": "internal-gateway-service",
+      "PRIVATE_SERVICE_NAME": "private-gateway-service",
+      "PUBLIC_SERVICE_NAME": "public-gateway-service",
+      "PRIVATE_GW_CPU_LIMIT": "500m",
+      "PRIVATE_GW_MEMORY_LIMIT": "200Mi",
+      "PRIVATE_SERVICE": "private-frontend-gateway",
+      "PUBLIC_GATEWAY_URL": "",
+      "PRIVATE_GATEWAY_URL": "",
+      "PUBLIC_GW_CPU_LIMIT": "1",
+      "PUBLIC_GW_MEMORY_LIMIT": "200Mi",
+      "PUBLIC_SERVICE": "public-frontend-gateway",
+      "REPLICAS": 1,
+      "SSL_SECRET": "defaultsslcertificate",
+      "TAG": "latest",
+      "IP_STACK": "v4",
+      "TRACING_ENABLED": false,
+      "TRACING_HOST": "nc-diagnostic-agent",
+      "ARTIFACT_DESCRIPTOR_VERSION": "",
+      "MONITORING_ENABLED": false,
+      "ENVOY_UID": "0",
+      "CLOUD_TOPOLOGY_KEY": "kubernetes.io/hostname",
+      "GW_INGRESS_ANNOTATIONS": "",
+      "DC_PUBLIC_GW_UMBRELLA_URL": "",
+      "DC_PRIVATE_GW_UMBRELLA_URL": "",
+      "XDS_CLUSTER_HOST": "control-plane",
+      "XDS_CLUSTER_PORT": 15010,
+      "RUN_COREDNS": false,
+      "GW_TERMINATION_GRACE_PERIOD_S": 60,
+      "LOG_LEVEL": "info",
+      "GATEWAY_GRPC_INGRESS_ENABLED": false,
+      "K8S_SERVICE_TYPE": "HEADLESS",
+      "SKIP_EGRESS_GATEWAY_CREATION": false
+    }
+  ],
+  "definitions": {
+    "integerOrString": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "string"
+        }
+      ]
+    },
+    "DEPLOYMENT_SESSION_ID": {
+      "$id": "#/properties/DEPLOYMENT_SESSION_ID",
+      "description": "Unique identifier of deployment session used to track e2e deploy activity",
+      "examples": [
+        "516736bf-d4b7-4900-beab-9599573ac8a8"
+      ],
+      "internal": true,
+      "title": "The DEPLOYMENT_SESSION_ID schema",
+      "type": "string"
+    },
+    "DEPLOYMENT_STRATEGY_TYPE": {
+      "$id": "#/properties/DEPLOYMENT_STRATEGY_TYPE",
+      "type": "string",
+      "enum": [
+        "recreate",
+        "best_effort_controlled_rollout",
+        "ramped_slow_rollout",
+        "custom_rollout"
+      ],
+      "title": "DEPLOYMENT_STRATEGY_TYPE schema",
+      "description": "Specify Deployment Strategy type for deploying service",
+      "internal": false,
+      "envSpecific": false
+    },
+    "DEPLOYMENT_STRATEGY_MAXSURGE": {
+      "$id": "#/properties/DEPLOYMENT_STRATEGY_MAXSURGE",
+      "type": "string",
+      "title": "DEPLOYMENT_STRATEGY_MAXSURGE scheme",
+      "description": "Specify .spec.strategy.rollingUpdate.maxSurge parameter",
+      "internal": false,
+      "envSpecific": false,
+      "examples": [
+        "50%",
+        "2"
+      ]
+    },
+    "DEPLOYMENT_STRATEGY_MAXUNAVAILABLE": {
+      "$id": "#/properties/DEPLOYMENT_STRATEGY_MAXUNAVAILABLE",
+      "type": "string",
+      "title": "DEPLOYMENT_STRATEGY_MAXUNAVAILABLE scheme",
+      "description": "Specify .spec.strategy.rollingUpdate.maxUnavailable parameter",
+      "internal": false,
+      "envSpecific": false,
+      "examples": [
+        "50%",
+        "2"
+      ]
+    },
+    "booleanOrString": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "string"
+        }
+      ]
+    }
+  },
+  "properties": {
+    "PAAS_PLATFORM": {
+      "$id": "#/properties/PAAS_PLATFORM",
+      "type": "string",
+      "title": "The PAAS_PLATFORM schema",
+      "description": "PaaS Platform.",
+      "examples": [
+        "KUBERNETES",
+        "OPENSHIFT"
+      ],
+      "internal": true
+    },
+    "PAAS_VERSION": {
+      "$id": "#/properties/PAAS_VERSION",
+      "type": "string",
+      "title": "The PAAS_VERSION schema",
+      "description": "This parameter specify version of paas where this service is deployed.",
+      "internal": true
+    },
+    "CERTIFICATE_BUNDLE_MD5SUM": {
+      "$id": "#/properties/CERTIFICATE_BUNDLE_MD5SUM",
+      "type": "string",
+      "title": "The CERTIFICATE_BUNDLE_MD5SUM schema",
+      "examples": [
+        "d41d8cd98f00b204e9800998ecf8427e"
+      ],
+      "internal": true
+    },
+    "CPU_REQUEST": {
+      "$id": "#/properties/CPU_REQUEST",
+      "$ref": "#/definitions/integerOrString",
+      "title": "The CPU_REQUEST schema",
+      "internal": true,
+      "envSpecific": true
+    },
+    "IMAGE_REPOSITORY": {
+      "$id": "#/properties/IMAGE_REPOSITORY",
+      "type": "string",
+      "title": "The IMAGE_REPOSITORY schema",
+      "internal": true
+    },
+    "TAG": {
+      "$id": "#/properties/TAG",
+      "type": "string",
+      "title": "The TAG schema",
+      "internal": true
+    },
+    "HEALTHCHECK_PATH": {
+      "$id": "#/properties/HEALTHCHECK_PATH",
+      "type": "string",
+      "title": "The HEALTHCHECK_PATH schema",
+      "description": "Path for healthcheck.",
+      "examples": [
+        "/ready"
+      ],
+      "internal": true
+    },
+    "READINESS_PATH": {
+      "$id": "#/properties/READINESS_PATH",
+      "type": "string",
+      "title": "The READINESS_PATH schema",
+      "description": "Path for readiness probe.",
+      "examples": [
+        "/ready"
+      ],
+      "internal": true
+    },
+    "HEALTHCHECK_PORT": {
+      "$id": "#/properties/HEALTHCHECK_PORT",
+      "type": "string",
+      "title": "The HEALTHCHECK_PORT schema",
+      "description": "Port alias for healthcheck & readiness probe.",
+      "examples": [
+        "web"
+      ],
+      "internal": true
+    },
+    "INTERNAL_GW_MEMORY_LIMIT": {
+      "$id": "#/properties/INTERNAL_GW_MEMORY_LIMIT",
+      "type": "string",
+      "title": "The INTERNAL_GW_MEMORY_LIMIT schema",
+      "internal": true,
+      "envSpecific": true
+    },
+    "INTERNAL_SERVICE": {
+      "$id": "#/properties/INTERNAL_SERVICE",
+      "type": "string",
+      "title": "The INTERNAL_SERVICE schema",
+      "description": "Name for internal deploy.",
+      "internal": true
+    },
+    "INTERNAL_SERVICE_NAME": {
+      "$id": "#/properties/INTERNAL_SERVICE_NAME",
+      "type": "string",
+      "title": "The INTERNAL_SERVICE_NAME schema",
+      "description": "Internal gateway service name.",
+      "internal": true
+    },
+    "PRIVATE_SERVICE_NAME": {
+      "$id": "#/properties/PRIVATE_SERVICE_NAME",
+      "type": "string",
+      "title": "The PRIVATE_SERVICE_NAME schema",
+      "description": "Private frontend gateway service name.",
+      "internal": true
+    },
+    "PUBLIC_SERVICE_NAME": {
+      "$id": "#/properties/PUBLIC_SERVICE_NAME",
+      "type": "string",
+      "title": "The PUBLIC_SERVICE_NAME schema",
+      "description": "Public frontend gateway service name.",
+      "internal": true
+    },
+    "PRIVATE_GW_MEMORY_LIMIT": {
+      "$id": "#/properties/PRIVATE_GW_MEMORY_LIMIT",
+      "type": "string",
+      "title": "The PRIVATE_GW_MEMORY_LIMIT schema",
+      "internal": true,
+      "envSpecific": true
+    },
+    "PRIVATE_SERVICE": {
+      "$id": "#/properties/PRIVATE_SERVICE",
+      "type": "string",
+      "title": "The PRIVATE_SERVICE schema",
+      "description": "Name for internal deploy.",
+      "internal": true
+    },
+    "PUBLIC_GW_MEMORY_LIMIT": {
+      "$id": "#/properties/PUBLIC_GW_MEMORY_LIMIT",
+      "type": "string",
+      "title": "The PUBLIC_GW_MEMORY_LIMIT schema",
+      "internal": true,
+      "envSpecific": true
+    },
+    "PUBLIC_SERVICE": {
+      "$id": "#/properties/PUBLIC_SERVICE",
+      "type": "string",
+      "title": "The PUBLIC_SERVICE schema",
+      "internal": true
+    },
+    "REPLICAS": {
+      "$id": "#/properties/REPLICAS",
+      "$ref": "#/definitions/integerOrString",
+      "envSpecific": true,
+      "internal": true,
+      "title": "The REPLICAS schema"
+    },
+    "SSL_SECRET": {
+      "$id": "#/properties/SSL_SECRET",
+      "type": "string",
+      "title": "The SSL_SECRET schema",
+      "description": "SSL secret name.",
+      "examples": [
+        "defaultsslcertificate"
+      ],
+      "internal": true
+    },
+    "IP_STACK": {
+      "$id": "#/properties/IP_STACK",
+      "type": "string",
+      "title": "The IP_STACK schema",
+      "description": "Version of IP protocol used in cloud. Only values 'v6' or 'v4' are allowed.",
+      "examples": [
+        "v4"
+      ]
+    },
+    "TRACING_ENABLED": {
+      "$id": "#/properties/TRACING_ENABLED",
+      "$ref": "#/definitions/booleanOrString",
+      "description": "Is tracing enabled",
+      "examples": [
+        false
+      ],
+      "title": "The TRACING_ENABLED schema"
+    },
+    "TRACING_HOST": {
+      "$id": "#/properties/TRACING_HOST",
+      "type": "string",
+      "title": "The TRACING_HOST schema",
+      "description": "Tracing server host",
+      "default": "nc-diagnostic-agent"
+    },
+    "ARTIFACT_DESCRIPTOR_VERSION": {
+      "$id": "#/properties/ARTIFACT_DESCRIPTOR_VERSION",
+      "type": "string",
+      "title": "The ARTIFACT_DESCRIPTOR_VERSION schema",
+      "description": "Artifact descriptor version which is installed.",
+      "internal": true
+    },
+    "MONITORING_ENABLED": {
+      "$id": "#/properties/MONITORING_ENABLED",
+      "$ref": "#/definitions/booleanOrString",
+      "description": "Is monitoring enabled",
+      "examples": [
+        false
+      ],
+      "title": "The MONITORING_ENABLED schema"
+    },
+    "ENVOY_UID": {
+      "$id": "#/properties/ENVOY_UID",
+      "type": "string",
+      "title": "The ENVOY_UID schema",
+      "description": "required to run envoy as a stub in composite platform satellite.",
+      "examples": [
+        "0"
+      ],
+      "internal": true
+    },
+    "CLOUD_TOPOLOGY_KEY": {
+      "$id": "#/properties/CLOUD_TOPOLOGY_KEY",
+      "type": "string",
+      "title": "The CLOUD_TOPOLOGY_KEY schema",
+      "description": "Affinity key.",
+      "examples": [
+        "kubernetes.io/hostname"
+      ]
+    },
+    "GW_INGRESS_ANNOTATIONS": {
+      "$id": "#/properties/GW_INGRESS_ANNOTATIONS",
+      "type": "string",
+      "title": "The GW_INGRESS_ANNOTATIONS schema",
+      "description": "Annotations for public and private gateways ingresses/routes.",
+      "default": ""
+    },
+    "DC_PUBLIC_GW_UMBRELLA_URL": {
+      "$id": "#/properties/DC_PUBLIC_GW_UMBRELLA_URL",
+      "type": "string",
+      "title": "The DC_PUBLIC_GW_UMBRELLA_URL schema",
+      "description": "Additional ingress's annotations for Public&Private GWs.",
+      "internal": true
+    },
+    "DC_PRIVATE_GW_UMBRELLA_URL": {
+      "$id": "#/properties/DC_PRIVATE_GW_UMBRELLA_URL",
+      "type": "string",
+      "title": "The DC_PRIVATE_GW_UMBRELLA_URL schema",
+      "description": "Additional ingress's annotations for Public&Private GWs.",
+      "internal": true
+    },
+    "XDS_CLUSTER_HOST": {
+      "$id": "#/properties/XDS_CLUSTER_HOST",
+      "type": "string",
+      "title": "The XDS_CLUSTER_HOST schema",
+      "description": "Additional ingress's annotations for Public&Private GWs.",
+      "internal": true
+    },
+    "XDS_CLUSTER_PORT": {
+      "$id": "#/properties/XDS_CLUSTER_PORT",
+      "$ref": "#/definitions/integerOrString",
+      "description": "Additional ingress's annotations for Public&Private GWs.",
+      "internal": true,
+      "title": "The XDS_CLUSTER_PORT schema"
+    },
+    "RUN_COREDNS": {
+      "$id": "#/properties/RUN_COREDNS",
+      "$ref": "#/definitions/booleanOrString",
+      "description": "Additional ingress's annotations for Public&Private GWs.",
+      "examples": [
+        false,
+        true
+      ],
+      "internal": true,
+      "title": "The RUN_COREDNS schema"
+    },
+    "INTERNAL_TLS_ENABLED": {
+      "$id": "#/properties/INTERNAL_TLS_ENABLED",
+      "$ref": "#/definitions/booleanOrString",
+      "description": "Is TLS enabled",
+      "examples": [
+        false
+      ],
+      "internal": true,
+      "title": "The INTERNAL_TLS_ENABLED schema"
+    },
+    "X509_AUTHENTICATION_ENABLED": {
+      "$id": "#/properties/X509_AUTHENTICATION_ENABLED",
+      "$ref": "#/definitions/booleanOrString",
+      "description": "Is X509 authentication enabled",
+      "examples": [
+        false
+      ],
+      "internal": true,
+      "title": "The X509_AUTHENTICATION_ENABLED schema"
+    },
+    "BASELINE_PROJ": {
+      "$id": "#/properties/BASELINE_PROJ",
+      "type": "string",
+      "title": "The BASELINE_PROJ schema",
+      "description": "Baseline project name",
+      "examples": [
+        false
+      ],
+      "internal": true
+    },
+    "READONLY_CONTAINER_FILE_SYSTEM_ENABLED": {
+      "$id": "#/properties/READONLY_CONTAINER_FILE_SYSTEM_ENABLED",
+      "$ref": "#/definitions/booleanOrString",
+      "description": "Read-only container file system is enabled",
+      "examples": [
+        false
+      ],
+      "title": "The READONLY_CONTAINER_FILE_SYSTEM_ENABLED schema"
+    },
+    "GW_TERMINATION_GRACE_PERIOD_S": {
+      "$id": "#/properties/GW_TERMINATION_GRACE_PERIOD_S",
+      "$ref": "#/definitions/integerOrString",
+      "description": "Amount of grace time prior to the container being forcibly terminated when marked for deletion or restarted. Unit in seconds.",
+      "examples": [
+        60
+      ],
+      "title": "The GW_TERMINATION_GRACE_PERIOD_S schema"
+    },
+    "LOG_LEVEL": {
+      "$id": "#/properties/LOG_LEVEL",
+      "type": "string",
+      "title": "The LOG_LEVEL schema",
+      "description": "Log level for service.",
+      "default": "info",
+      "examples": [
+        "info",
+        "debug",
+        "warn"
+      ],
+      "internal": true
+    },
+    "GATEWAY_GRPC_INGRESS_ENABLED": {
+      "$id": "#/properties/GATEWAY_GRPC_INGRESS_ENABLED",
+      "$ref": "#/definitions/booleanOrString",
+      "default": false,
+      "description": "Flag to deploy public and private gateways grpc.",
+      "examples": [
+        false
+      ],
+      "title": "Deploy grpc gateways"
+    },
+    "FACADE_GATEWAY": {
+      "$id": "#/properties/FACADE_GATEWAY",
+      "$ref": "#/definitions/booleanOrString",
+      "description": "Facade gateway flag.",
+      "examples": [
+        false
+      ],
+      "title": "The FACADE_GATEWAY schema"
+    },
+    "NAMESPACE": {
+      "$id": "#/properties/NAMESPACE",
+      "type": "string",
+      "title": "The NAMESPACE schema",
+      "description": "The namespace it is going to be deployed.",
+      "internal": true
+    },
+    "CLOUD_PRIVATE_HOST": {
+      "$id": "#/properties/CLOUD_PRIVATE_HOST",
+      "type": "string",
+      "title": "The CLOUD_PRIVATE_HOST schema",
+      "description": "PaaS custom hostname.",
+      "internal": true
+    },
+    "CLOUD_PUBLIC_HOST": {
+      "$id": "#/properties/CLOUD_PUBLIC_HOST",
+      "type": "string",
+      "title": "The CLOUD_PUBLIC_HOST schema",
+      "description": "PaaS server hostname (Cloud Public host in devops configuration plugin), is used for creating tenant routes.",
+      "internal": true
+    },
+    "PUBLIC_GATEWAY_URL": {
+      "$id": "#/properties/PUBLIC_GATEWAY_URL",
+      "type": "string",
+      "title": "The PUBLIC_GATEWAY_URL schema",
+      "description": "Public gateway url.",
+      "default": ""
+    },
+    "PRIVATE_GATEWAY_URL": {
+      "$id": "#/properties/PRIVATE_GATEWAY_URL",
+      "type": "string",
+      "title": "The PRIVATE_GATEWAY_URL schema",
+      "description": "Private gateway url.",
+      "default": ""
+    },
+    "PUBLIC_GATEWAY_ROUTE_HOST": {
+      "$id": "#/properties/PUBLIC_GATEWAY_ROUTE_HOST",
+      "type": "string",
+      "title": "The PUBLIC_GATEWAY_ROUTE_HOST schema",
+      "description": "Route Host for public gateway, used for frontend-gateway.",
+      "examples": [
+        "public-gateway-${ENV_NAMESPACE}.${ENV_CLOUD_PUBLIC_HOST}"
+      ],
+      "deprecated": true
+    },
+    "PRIVATE_GATEWAY_ROUTE_HOST": {
+      "$id": "#/properties/PRIVATE_GATEWAY_ROUTE_HOST",
+      "type": "string",
+      "title": "The PRIVATE_GATEWAY_ROUTE_HOST schema",
+      "description": "Route Host for private gateway, used for frontend-gateway.",
+      "examples": [
+        "private-gateway-${ENV_NAMESPACE}.${ENV_CLOUD_PUBLIC_HOST}\n"
+      ],
+      "deprecated": true
+    },
+    "PRIVATE_GW_CPU_LIMIT": {
+      "$id": "#/properties/PRIVATE_GW_CPU_LIMIT",
+      "$ref": "#/definitions/integerOrString",
+      "title": "The PRIVATE_GW_CPU_LIMIT schema",
+      "internal": true,
+      "envSpecific": true
+    },
+    "INTERNAL_GW_CPU_LIMIT": {
+      "$id": "#/properties/INTERNAL_GW_CPU_LIMIT",
+      "$ref": "#/definitions/integerOrString",
+      "title": "The INTERNAL_GW_CPU_LIMIT schema",
+      "internal": true,
+      "envSpecific": true
+    },
+    "PUBLIC_GW_CPU_LIMIT": {
+      "$id": "#/properties/PUBLIC_GW_CPU_LIMIT",
+      "$ref": "#/definitions/integerOrString",
+      "title": "The PUBLIC_GW_CPU_LIMIT schema",
+      "internal": true,
+      "envSpecific": true
+    },
+    "PEER_NAMESPACE": {
+      "$id": "#/properties/PEER_NAMESPACE",
+      "type": "string",
+      "title": "The PEER_NAMESPACE schema",
+      "description": "Blue-green domain peer namespace.",
+      "internal": true
+    },
+    "ORIGIN_NAMESPACE": {
+      "$id": "#/properties/ORIGIN_NAMESPACE",
+      "type": "string",
+      "title": "The ORIGIN_NAMESPACE schema",
+      "description": "Blue-green domain origin namespace. Has the same value as NAMESPACE in non-blue-green deployment.",
+      "internal": true
+    },
+    "INGRESS_CLASS": {
+      "$id": "#/properties/INGRESS_CLASS",
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "title": "The INGRESS_CLASS schema",
+      "description": "Variable can be used to set custom ingressClassName for ingresses.",
+      "internal": true
+    },
+    "CLOUD_TOPOLOGIES": {
+      "$id": "#/properties/CLOUD_TOPOLOGIES",
+      "type": "array",
+      "title": "Topologies settings for topologySpreadConstraints",
+      "description": "Array of topologies settings for topologySpreadConstraints. Each array item must contain at least 'topologyKey' attribute. Other supported attributes are 'maxSkew' and 'whenUnsatisfiable' - optional.",
+      "default": "- topologyKey: kubernetes.io/hostname",
+      "internal": true,
+      "examples": [
+        "- topologyKey: kubernetes.io/hostname"
+      ]
+    },
+    "K8S_SERVICE_TYPE": {
+      "$id": "#/properties/K8S_SERVICE_TYPE",
+      "type": "string",
+      "title": "The K8S_SERVICE_TYPE schema",
+      "description": "K8S service type",
+      "default": "HEADLESS",
+      "internal": true
+    },
+    "HPA_ENABLED": {
+      "$id": "#/properties/HPA_ENABLED",
+      "$ref": "#/definitions/booleanOrString",
+      "description": "Defines whether horizontal autoscaling enabled for microservice",
+      "envSpecific": true,
+      "internal": true,
+      "title": "The HPA_ENABLED scheme"
+    },
+    "HPA_MIN_REPLICAS": {
+      "$id": "#/properties/HPA_MIN_REPLICAS",
+      "$ref": "#/definitions/integerOrString",
+      "description": "Defines the lower limit for the number of replicas to which the autoscaler can scale down",
+      "envSpecific": true,
+      "internal": true,
+      "title": "The HPA_MIN_REPLICAS scheme"
+    },
+    "HPA_MAX_REPLICAS": {
+      "$id": "#/properties/HPA_MAX_REPLICAS",
+      "$ref": "#/definitions/integerOrString",
+      "description": "Defines the upper limit for the number of replicas to which the autoscaler can scale up. It cannot be less that HPA_MIN_REPLICAS.",
+      "envSpecific": true,
+      "internal": true,
+      "title": "The HPA_MAX_REPLICAS scheme"
+    },
+    "HPA_AVG_CPU_UTILIZATION_TARGET_PERCENT": {
+      "$id": "#/properties/HPA_AVG_CPU_UTILIZATION_TARGET_PERCENT",
+      "$ref": "#/definitions/integerOrString",
+      "description": "Target average CPU utilization for horizontal pod autoscaling",
+      "envSpecific": true,
+      "examples": [
+        75
+      ],
+      "internal": true,
+      "title": "The HPA_AVG_CPU_UTILIZATION_TARGET_PERCENT scheme"
+    },
+    "HPA_SCALING_DOWN_PERCENT_PERIOD_SECONDS": {
+      "$id": "#/properties/HPA_SCALING_DOWN_PERCENT_PERIOD_SECONDS",
+      "$ref": "#/definitions/integerOrString",
+      "description": "Defines behavior.scaleDown.policies[].periodSeconds property in HPA resource for Percent type",
+      "envSpecific": true,
+      "examples": [
+        60
+      ],
+      "internal": true,
+      "title": "The HPA_SCALING_DOWN_PERCENT_PERIOD_SECONDS scheme"
+    },
+    "HPA_SCALING_DOWN_PERCENT_VALUE": {
+      "$id": "#/properties/HPA_SCALING_DOWN_PERCENT_VALUE",
+      "$ref": "#/definitions/integerOrString",
+      "description": "Defines behavior.scaleDown.policies[].value property in HPA resource for Percent type",
+      "envSpecific": true,
+      "examples": [
+        100
+      ],
+      "internal": true,
+      "title": "The HPA_SCALING_DOWN_PERCENT_VALUE scheme"
+    },
+    "HPA_SCALING_DOWN_PODS_PERIOD_SECONDS": {
+      "$id": "#/properties/HPA_SCALING_DOWN_PODS_PERIOD_SECONDS",
+      "$ref": "#/definitions/integerOrString",
+      "description": "Defines behavior.scaleDown.policies[].periodSeconds property in HPA resource for Pods type",
+      "envSpecific": true,
+      "examples": [
+        60
+      ],
+      "internal": true,
+      "title": "The HPA_SCALING_DOWN_PODS_PERIOD_SECONDS scheme"
+    },
+    "HPA_SCALING_DOWN_PODS_VALUE": {
+      "$id": "#/properties/HPA_SCALING_DOWN_PODS_VALUE",
+      "$ref": "#/definitions/integerOrString",
+      "description": "Defines behavior.scaleDown.policies[].value property in HPA resource for Pods type",
+      "envSpecific": true,
+      "examples": [
+        1
+      ],
+      "internal": true,
+      "title": "The HPA_SCALING_DOWN_PODS_VALUE scheme"
+    },
+    "HPA_SCALING_DOWN_SELECT_POLICY": {
+      "$id": "#/properties/HPA_SCALING_DOWN_SELECT_POLICY",
+      "description": "Defines behavior.scaleDown.selectPolicy property in HPA resource. Allowed values are: Min, Max, Disabled",
+      "enum": [
+        "Min",
+        "Max",
+        "Disabled"
+      ],
+      "envSpecific": true,
+      "examples": [
+        "Max"
+      ],
+      "internal": true,
+      "title": "The HPA_SCALING_DOWN_SELECT_POLICY scheme",
+      "type": "string"
+    },
+    "HPA_SCALING_DOWN_STABILIZATION_WINDOW_SECONDS": {
+      "$id": "#/properties/HPA_SCALING_DOWN_STABILIZATION_WINDOW_SECONDS",
+      "$ref": "#/definitions/integerOrString",
+      "description": "Defines behavior.scaleDown.stabilizationWindowSeconds property in HPA resource",
+      "envSpecific": true,
+      "examples": [
+        300
+      ],
+      "internal": true,
+      "title": "The HPA_SCALING_DOWN_STABILIZATION_WINDOW_SECONDS scheme"
+    },
+    "HPA_SCALING_UP_PERCENT_PERIOD_SECONDS": {
+      "$id": "#/properties/HPA_SCALING_UP_PERCENT_PERIOD_SECONDS",
+      "$ref": "#/definitions/integerOrString",
+      "description": "Defines behavior.scaleUp.policies[].periodSeconds property in HPA resource for Percent type",
+      "envSpecific": true,
+      "examples": [
+        60
+      ],
+      "internal": true,
+      "title": "The HPA_SCALING_UP_PERCENT_PERIOD_SECONDS scheme"
+    },
+    "HPA_SCALING_UP_PERCENT_VALUE": {
+      "$id": "#/properties/HPA_SCALING_UP_PERCENT_VALUE",
+      "$ref": "#/definitions/integerOrString",
+      "description": "Defines behavior.scaleUp.policies[].value property in HPA resource for Percent type",
+      "envSpecific": true,
+      "examples": [
+        100
+      ],
+      "internal": true,
+      "title": "The HPA_SCALING_UP_PERCENT_VALUE scheme"
+    },
+    "HPA_SCALING_UP_PODS_PERIOD_SECONDS": {
+      "$id": "#/properties/HPA_SCALING_UP_PODS_PERIOD_SECONDS",
+      "$ref": "#/definitions/integerOrString",
+      "description": "Defines behavior.scaleUp.policies[].periodSeconds property in HPA resource for Pods type",
+      "envSpecific": true,
+      "examples": [
+        60
+      ],
+      "internal": true,
+      "title": "The HPA_SCALING_UP_PODS_PERIOD_SECONDS scheme"
+    },
+    "HPA_SCALING_UP_PODS_VALUE": {
+      "$id": "#/properties/HPA_SCALING_UP_PODS_VALUE",
+      "$ref": "#/definitions/integerOrString",
+      "description": "Defines behavior.scaleUp.policies[].value property in HPA resource for Pods type",
+      "envSpecific": true,
+      "examples": [
+        1
+      ],
+      "internal": true,
+      "title": "The HPA_SCALING_UP_PODS_VALUE scheme"
+    },
+    "HPA_SCALING_UP_SELECT_POLICY": {
+      "$id": "#/properties/HPA_SCALING_UP_SELECT_POLICY",
+      "description": "Defines behavior.scaleUp.selectPolicy property in HPA resource. Allowed values are: Min, Max, Disabled",
+      "enum": [
+        "Min",
+        "Max",
+        "Disabled"
+      ],
+      "envSpecific": true,
+      "examples": [
+        "Max"
+      ],
+      "internal": true,
+      "title": "The HPA_SCALING_UP_SELECT_POLICY scheme",
+      "type": "string"
+    },
+    "HPA_SCALING_UP_STABILIZATION_WINDOW_SECONDS": {
+      "$id": "#/properties/HPA_SCALING_UP_STABILIZATION_WINDOW_SECONDS",
+      "$ref": "#/definitions/integerOrString",
+      "description": "Defines behavior.scaleUp.stabilizationWindowSeconds property in HPA resource",
+      "envSpecific": true,
+      "examples": [
+        60
+      ],
+      "internal": true,
+      "title": "The HPA_SCALING_UP_STABILIZATION_WINDOW_SECONDS scheme"
+    },
+    "SKIP_EGRESS_GATEWAY_CREATION": {
+      "$id": "#/properties/SKIP_EGRESS_GATEWAY_CREATION",
+      "$ref": "#/definitions/booleanOrString",
+      "default": false,
+      "description": "Is an egress-gateway needed to be created?",
+      "examples": [
+        false
+      ],
+      "internal": true,
+      "title": "The SKIP_EGRESS_GATEWAY_CREATION schema"
+    },
+    "EGRESS_GW_CPU_LIMIT": {
+      "$id": "#/properties/EGRESS_GW_CPU_LIMIT",
+      "$ref": "#/definitions/integerOrString",
+      "title": "The EGRESS_GW_CPU_LIMIT schema",
+      "internal": true,
+      "envSpecific": true
+    },
+    "EGRESS_GW_MEMORY_LIMIT": {
+      "$id": "#/properties/EGRESS_GW_MEMORY_LIMIT",
+      "type": "string",
+      "title": "The EGRESS_GW_MEMORY_LIMIT schema",
+      "internal": true,
+      "envSpecific": true
+    }
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,42 @@
+# ============== DEPLOYMENT VARIABLES ============================
+INTERNAL_TLS_ENABLED: false
+MONITORING_ENABLED: true
+CLOUD_TOPOLOGY_KEY: kubernetes.io/hostname
+READONLY_CONTAINER_FILE_SYSTEM_ENABLED: false
+
+HEALTHCHECK_PATH: "/ready"
+READINESS_PATH: "/ready"
+HEALTHCHECK_PORT: "admin"
+INTERNAL_SERVICE: "internal-gateway"
+INTERNAL_SERVICE_NAME: "internal-gateway-service"
+PUBLIC_SERVICE: "public-frontend-gateway"
+PUBLIC_SERVICE_NAME: "public-gateway-service"
+PRIVATE_SERVICE: "private-frontend-gateway"
+PRIVATE_SERVICE_NAME: "private-gateway-service"
+EGRESS_GATEWAY_SERVICE: "egress-gateway-gateway"
+EGRESS_GATEWAY_SERVICE_NAME: "egress-gateway"
+GW_INGRESS_ANNOTATIONS: ""
+DC_PUBLIC_GW_UMBRELLA_URL: ''
+DC_PRIVATE_GW_UMBRELLA_URL: ''
+X509_AUTHENTICATION_ENABLED: false
+GATEWAY_GRPC_INGRESS_ENABLED: false
+GW_TERMINATION_GRACE_PERIOD_S: 60
+PUBLIC_GATEWAY_ROUTE_HOST: ''
+PRIVATE_GATEWAY_ROUTE_HOST: ''
+INGRESS_CLASS: null
+SKIP_EGRESS_GATEWAY_CREATION: false
+
+# ============== SERVICE VARIABLES ============================
+LOG_LEVEL: "info"
+
+TRACING_ENABLED: false
+TRACING_HOST: 'nc-diagnostic-agent'
+
+IP_STACK: "v4"
+ENVOY_UID: '0'
+XDS_CLUSTER_HOST: control-plane-internal
+XDS_CLUSTER_PORT: 15010
+RUN_COREDNS: false
+FACADE_GATEWAY: false
+
+K8S_SERVICE_TYPE: 'HEADLESS'

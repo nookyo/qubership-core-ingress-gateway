@@ -1,0 +1,76 @@
+version: '3'
+networks:
+  platform:
+    external:
+      name: platform
+
+
+services:  
+  internal-gateway-service:
+    image: "envoyproxy/envoy:latest"
+    volumes:
+      - ./envoy.yml:/etc/envoy/envoy.yaml
+    ports:
+      - 9901:9901
+    networks:
+      platform:
+          aliases:
+               - internal-gateway-service.local.svc.cluster.local
+    labels:
+          - "traefik.port=8080"
+          - "traefik.frontend.rule=Host:internal-gateway.local.${IPS}.xip.io, internal-gateway-service"
+    command: [
+       "envoy",
+       "--service-cluster", "internal-gateway-service" ,
+       "--service-node", "internal-gateway-service.1",
+       "--drain-time-s","45",
+       "--parent-shutdown-time-s","60",
+       "-c",
+       "/etc/envoy/envoy.yaml"
+      ]
+
+  private-gateway-service:
+    image: "envoyproxy/envoy:latest"
+    volumes:
+      - ./envoy.yml:/etc/envoy/envoy.yaml
+    ports:
+      - 9902:9901
+    networks:
+      platform:
+          aliases:
+               - private-gateway-service.local.svc.cluster.local
+    labels:
+          - "traefik.port=8080"
+          - "traefik.frontend.rule=Host:private-gateway.local.${IPS}.xip.io, private-gateway-service"
+    command: [
+       "envoy",
+       "--service-cluster", "private-gateway-service" ,
+       "--service-node", private-gateway-service.1",
+       "--drain-time-s","45",
+       "--parent-shutdown-time-s","60",
+       "-c",
+       "/etc/envoy/envoy.yaml"
+      ]
+
+  public-gateway-service:
+    image: "envoyproxy/envoy:latest"
+    volumes:
+      - ./envoy.yml:/etc/envoy/envoy.yaml
+    ports:
+      - 9903:9901
+    networks:
+      platform:
+          aliases:
+               - public-gateway-service.local.svc.cluster.local
+    labels:
+          - "traefik.port=8080"
+          - "traefik.frontend.rule=Host:public-gateway.local.${IPS}.xip.io, public-gateway-service"
+    command: [
+       "envoy",
+       "--service-cluster", "public-gateway-service" ,
+       "--service-node", public-gateway-service.1",
+       "--drain-time-s","45",
+       "--parent-shutdown-time-s","60",
+       "-c",
+       "/etc/envoy/envoy.yaml"
+      ]
