@@ -17,4 +17,5 @@ jobs:
     uses: netcracker/qubership-workflow-hub/.github/workflows/docker-publish.yml@main
     needs: tag
     with:
+      artifact-id: ${{ github.event.repository.name }}
       tags-override: "${{github.ref_name}}-${{ needs.tag.outputs.name }}"
