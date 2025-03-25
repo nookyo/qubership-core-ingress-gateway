@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - id: tag
-        run: echo "name=qubership-core-ingress-gateway-$(date +'%Y%m%dT%H%M%S')" >> $GITHUB_OUTPUT
+        run: echo "name=$(date +'%Y%m%d%H%M%S')-${{ github.run_number }}" >> $GITHUB_OUTPUT
     outputs:
       name: ${{ steps.tag.outputs.name }}
 
@@ -17,4 +17,4 @@ jobs:
     uses: netcracker/qubership-workflow-hub/.github/workflows/docker-publish.yml@main
     needs: tag
     with:
-      artifact-id: ${{ needs.tag.outputs.name }}
+      tags-override: "${{github.ref_name}}-${{ needs.tag.outputs.name }}"
