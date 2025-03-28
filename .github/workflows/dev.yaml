@@ -56,7 +56,6 @@ jobs:
     needs: perform-version
     with:
       ref: ${{ github.event.ref }}
-      artifact-id: ${{ github.event.inputs.artifact-name || github.event.repository.name }}
+      artifact-id: ${{ github.event.repository.name }}
       dry-run: ${{ inputs.dry-run }}
-      download-artifact: true
       tags: ${{ needs.perform-version.outputs.tags }}
