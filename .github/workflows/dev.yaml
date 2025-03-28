@@ -51,8 +51,8 @@ jobs:
         run: |
           echo "#### Perform Tags Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Metadata Result:** ${{ steps.metadata.outputs.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Tags:** ${{ steps.prepare_tags.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
+          echo "***Metadata:*** ${{ steps.metadata.outputs.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "***Tags:*** ${{ steps.prepare_tags.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
 
   docker-build:
     uses: netcracker/qubership-workflow-hub/.github/workflows/docker-publish.yml@main
