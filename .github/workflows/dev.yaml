@@ -35,9 +35,6 @@ jobs:
         with:
           configuration-path: .github/metadata-config.yml
 
-      - name: Echo metadata
-        run: echo "Metadata result ${{ steps.metadata.outputs.result }}" >> $GITHUB_STEP_SUMMARY
-
       - name: Prepare tags
         id: prepare_tags
         run: |
@@ -49,7 +46,13 @@ jobs:
             TAGS="${BASE_TAG}"
           fi
           echo "tags=${TAGS}" >> $GITHUB_OUTPUT
-          echo "tags: ${TAGS}" >> $GITHUB_STEP_SUMMARY
+
+      - name: Summary step
+        run: |
+          echo "# GitHub Actions Job Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Metadata Result:** ${{ steps.metadata.outputs.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Tags:** ${{ steps.prepare_tags.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
 
   docker-build:
     uses: netcracker/qubership-workflow-hub/.github/workflows/docker-publish.yml@main
