@@ -49,7 +49,7 @@ jobs:
 
       - name: Summary step
         run: |
-          echo "### Metadata/Tags Summary" >> $GITHUB_STEP_SUMMARY
+          echo "#### Perform Tags Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Metadata Result:** ${{ steps.metadata.outputs.result }}" >> $GITHUB_STEP_SUMMARY
           echo "**Tags:** ${{ steps.prepare_tags.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
